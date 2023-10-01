@@ -8,7 +8,7 @@
 
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
-    id 'application'
+    id 'java'
 }
 
 repositories {
@@ -16,15 +16,47 @@ repositories {
     mavenCentral()
 }
 
+sourceSets.main {
+    java.srcDirs = ['src/main/java']
+}
+
+sourceSets.test {
+    java.srcDirs = ['src/test/java']
+}
+
+sourceSets {
+    jmh {
+        java.srcDirs = ['src/jmh/java']
+        resources.srcDirs = ['src/jmh/resources']
+        compileClasspath += sourceSets.main.runtimeClasspath
+    }
+}
+
 dependencies {
     // Use JUnit test framework.
     testImplementation 'junit:junit:4.13.2'
+
+    // JMH Dependencies
+    implementation group: 'org.openjdk.jmh', name: 'jmh-core', version: '1.37'
+    annotationProcessor group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '1.37'
+
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.20.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.20.0'
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.20.0'
 
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:30.1.1-jre'
 }
 
-application {
-    // Define the main class for the application.
-    mainClass = 'com.brs.in.jmh.App'
+// https://docs.gradle.org/current/dsl/org.gradle.api.tasks.JavaExec.html
+tasks.register('jmh', JavaExec) {
+    dependsOn jmhClasses
+    getMainClass = 'org.openjdk.jmh.Main'
+    classpath = sourceSets.jmh.compileClasspath + sourceSets.jmh.runtimeClasspath
+
+    // To enable the built-in stacktrace sampling profiler
+    // args = ['-prof', 'stack']
 }
+
+// to make sure benchmarks always get compiled
+classes.finalizedBy(jmhClasses)

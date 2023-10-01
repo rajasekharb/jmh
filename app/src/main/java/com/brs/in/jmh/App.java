@@ -3,12 +3,44 @@
  */
 package com.brs.in.jmh;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.GCProfiler;
+import org.openjdk.jmh.runner.Runner;
+import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import java.util.concurrent.TimeUnit;
+
 public class App {
-    public String getGreeting() {
-        return "Hello World!";
+    public static void main(String[] args) throws RunnerException {
+        Options options = new OptionsBuilder()
+            .addProfiler(GCProfiler.class)
+            .build();
+        new Runner(options).run();
     }
 
-    public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+    @Benchmark
+    @BenchmarkMode(Mode.All)
+    @OutputTimeUnit(TimeUnit.MINUTES)
+    public void testMethodWithPlaceholders(MyState state) {
+        state.logger.info("The sum of values a {} and b {} is {} ", state.a, state.b, (state.a + state.b));
+    }
+
+    @Benchmark
+    @BenchmarkMode(Mode.All)
+    @OutputTimeUnit(TimeUnit.MINUTES)
+    public void testMethodWithStringConcatenation(MyState state) {
+        state.logger.info("The sum of values a " + state.a + " and b " + state.b + " is " + (state.a + state.b));
+    }
+
+    @State(Scope.Thread)
+    public static class MyState {
+        private final Logger logger = LogManager.getLogger();
+
+        public int a = 1;
+        public int b = 2;
     }
 }
